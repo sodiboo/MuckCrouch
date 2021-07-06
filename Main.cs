@@ -1,4 +1,5 @@
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using System.IO;
@@ -10,6 +11,7 @@ namespace Crouch
     [BepInPlugin(Guid, Name, Version), BepInDependency("Terrain.MuckSettings")]
     public class Main : BaseUnityPlugin
     {
+
         public const string
             Name = "Crouch",
             Author = "Terrain",
@@ -20,7 +22,9 @@ namespace Crouch
         internal readonly Harmony harmony;
         internal readonly Assembly assembly;
         public readonly string modFolder;
-        public static string savefile;
+        
+        public static ConfigFile config = new ConfigFile(Path.Combine(Paths.ConfigPath, "crouch.cfg"), true);
+        public static ConfigEntry<KeyCode> crouch = config.Bind<KeyCode>("Crouch", "crouch", KeyCode.LeftControl, "The button that makes you crouch.");
 
         Main()
         {
@@ -28,36 +32,10 @@ namespace Crouch
             harmony = new Harmony(Guid);
             assembly = Assembly.GetExecutingAssembly();
             modFolder = Path.GetDirectoryName(assembly.Location);
-            savefile = Path.Combine(modFolder, "binds");
 
-            LoadBinds();
-
+            // If anyone's using this as a base for their config, make sure to also copy this line!
+            config.SaveOnConfigSet = true;
             harmony.PatchAll(assembly);
-        }
-
-        public static KeyCode bind = KeyCode.LeftControl;
-
-        public static void LoadBinds()
-        {
-            if (!File.Exists(savefile)) return;
-            using (var file = File.Open(savefile, FileMode.Open, FileAccess.Read))
-            using (var reader = new BinaryReader(file))
-            {
-                bind = (KeyCode)reader.ReadInt32();
-            }
-        }
-
-        public static void SaveBind(KeyCode key)
-        {
-            bind = key;
-            using (var file = File.Open(savefile, FileMode.OpenOrCreate, FileAccess.Write))
-            {
-                file.SetLength(0);
-                using (var writer = new BinaryWriter(file))
-                {
-                    writer.Write((int)bind);
-                }
-            }
         }
     }
 }
